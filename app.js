@@ -4,9 +4,18 @@ const dotenv = require("dotenv");
 const connectDB = require("./config/db");
 
 dotenv.config();
-connectDB();
 
 const app = express();
+
+// Connect to DB on each request for serverless
+let isConnected = false;
+app.use(async (req, res, next) => {
+  if (!isConnected) {
+    await connectDB();
+    isConnected = true;
+  }
+  next();
+});
 
 const allowedOrigins = [
   "http://localhost:5173",
@@ -42,7 +51,6 @@ app.use("/api/tickets", ticketRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 
-// Global error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({
